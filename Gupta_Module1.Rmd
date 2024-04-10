@@ -1,0 +1,209 @@
+---
+title: "Week 1"
+author: "Sanchi Gupta"
+date: "2023-11-08"
+output:
+  html_document: default
+  word_document: default
+---
+
+# Module 1 R Practice
+### 1. Reading the dataset into R
+```{r}
+property <- read.csv("fy2023-property-assessment-data.csv")
+
+```
+
+### 2. Cleaning the dataset
+* #### Importing Libraries
+```{r}
+library(janitor)
+library(ggplot2)
+library(dplyr)
+library(gmodels)
+library(reshape2)
+library(plotly)
+```
+
+* #### Cleaning the col names 
+```{r}
+property <- clean_names(property)
+```
+
+* #### Extracting useful cols
+```{r}
+property_extract<- subset(property, select= 
+                        c(city,land_sf,land_value,bldg_value,roof_structure, bed_rms, full_bth, heat_type ))
+```
+
+* #### Viewing data type
+```{r}
+str(property_extract)
+```
+This summarizes the data types for each column in the dataset. Since it justifies the each data type and column, we dont need to change it.
+
+
+* #### Summarizing the dataset
+```{r}
+summary(property_extract)
+
+```
+
+
+
+### 3. Visualization
+* #### Which city has the highest number of parcels?
+```{r}
+V1<- data.frame(property_extract%>%
+                                group_by(city)%>%
+                                summarise(total =n()))
+
+V1$city <- ifelse(V1$city == "",NA, V1$city)
+V1<- na.omit(V1)
+```
+I have used `ifelse()` and `na.omit()` to remove the empty column from the data frame so to plot the graph accurately. This gives us 19 cities in total from 20 rows.
+
+```{r}
+ggplot(V1, aes(x = total, y= reorder (city,total), fill= city)) +
+  geom_bar(stat="identity",show.legend = FALSE) +
+  labs(title = "Total parcels in each city", x = "Total", y = "City")
+
+```
+
+The above graph depicts the total number of parcels in each city. The above graph is plotted using `ggplot`. According to the chart above, **Boston** has the highest number of parcels that is 47,104 and **Newton** has the lowest number of parcels which equals to 1. 
+There are a total of 19 cities in the dataset. 
+
+---
+
+* #### What is the average price of all listings within each city?
+```{r}
+V2 <- data.frame(property_extract%>%
+                                group_by(city)%>%
+                                summarise(average_value = mean(bldg_value)))
+V2<- arrange(V2, desc(average_value))
+table(V2$city)
+```
+By using `table()`, it shows one value is blank. Hence we have used `filter()` function to remove this particular row to avoid any misunderstanding. 
+```{r}
+V2 <- filter(V2, city !="")
+```
+
+```{r}
+ggplot(V2, aes(x = reorder(city, average_value), y = average_value, fill = city)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  labs(title = "Average Property Value by City", x = "City", y = "Average Value") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_y_continuous(labels = scales::dollar_format(prefix = "$"),
+    breaks = seq(0,4000000, by=500000),
+    limits = c(0,4200000))
+
+```
+
+I have created a bar chart to visualize the average property values by city. Average value refers to mean value which can be calculated by dividing total of building value by number of buildings. The above chart shows that **READVILLE** has the highest average building value followed by **BOSTON**. On the other hand, **DEDHAM** has the lowest average property value.
+
+As per previous visualization table 'V1', READVILLE only has 2 properties which can be the reason for average value to be valued at such a high.
+
+---
+
+* #### Which heat type is used the most in Boston ?
+```{r}
+V3 <- data.frame(property_extract%>%
+                                group_by(heat_type)%>%
+                                summarise(total = n()))
+
+V3$heat_type <- ifelse(V3$heat_type  == "",NA, V3$heat_type )
+V3<- na.omit(V3)
+
+ggplot(V3, aes(x = "", y = total, fill = heat_type)) +
+  geom_bar(stat = "identity") +
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = total),   position = position_stack(vjust = 0.40)) +
+  labs(title = "Distribution of Heat Types")+
+  theme_void()
+
+```
+
+The pie chart above provides a visual representation of the counts of each heating type. It helps us compare different heating types and which is mostly used. As per the above graph, **Ht Water/Steam** is the most used heating system followed by **Forced Hot Air**. This shows that more than 50% of the parcels use Ht Water/Steam as their heating system.
+
+---
+
+* #### Roof Structure count by City
+```{r}
+V4 <- gmodels::CrossTable(property_extract$city, property_extract$roof_structure)
+
+```
+
+```{r}
+V4_long <- melt(V4, id.vars ="roof_structure", value.name = "Count")
+V4_long <- filter(V4_long, y !="")
+V4_long <- filter(V4_long, x !="")
+```
+We have reshaped the data into a long format using `melt()` so to plot stacked bar graph.
+
+```{r}
+ggplot(V4_long, aes(x = x, y = Count, fill = y)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Roof Structure Counts by City", x = "City", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_y_continuous(
+    breaks = seq(0,35000, by=3000),
+    limits = c(0,45000))
+
+```
+
+I have used a stacked bar graph to plot the roof structure counts by city. From the above we can conclude that **BOSTON** uses **F- Flat roof type** the most followed by **SOUTH BOSTON** and **DORCHESTER**. For cities like BROOKLINE, DEDHAM, NEWTON and READVILLE the data is very limited which is the reason it is not showing above.
+
+---
+
+* ### Correlation between Land Area in sq_feet and Land Value
+```{r}
+V5 <- subset(property_extract, select = c(land_sf, land_value))
+V5 <- na.omit(V5)
+V5 <- filter(V5, land_value !=0)
+```
+
+Used `filter()` and `omit()` function to exclude variables such as 0 or null.
+
+```{r}
+V5_correlation <- cor(V5$land_sf, V5$land_value)
+
+#plotted a scatterplot for years of professional coding and salary with correlation
+ggplot(V5, aes(x =land_sf , y = land_value)) +
+  geom_point(size=0.0025) +
+  labs(title = "Relationship between Land Area in sq_feet and Land Value",
+  x= "Land Area in sq",
+  y= "Land Value in $") +
+  scale_y_continuous(
+    breaks = seq(0,270000, by=45000),
+    limits = c(0,300000))+
+  scale_x_continuous(
+    breaks = seq(0,10000, by=2000),
+    limits = c(0,8000))+
+  geom_text(x = 7000, y = 15000, label = paste("CORRELATION: ", round(V5_correlation, 3)))
+
+```
+
+The above scatter plot is used to denote the correlation between land_value and land_sf. The graph is scattered mainly between 4000 land area and ranges $180000 to $225000 in land value. The points are showing upward trend which denotes that land value increases with the land area. There are other variables also involved in determining the land value for instance area, amenities etc which affect the value. Therefore we can see the graph scattered all over the place. The correlation of land value and land area is 0.413. 
+
+---
+
+* ### Histogram of building types
+```{r}
+V6<- subset(property_extract, select = bed_rms)
+
+V6 <- na.omit(V6)
+
+V6_plot<- ggplot(V6, aes(x = bed_rms)) +
+  geom_histogram(binwidth = 1
+                 , fill = "cyan", color = "white") +
+  labs(title = "Distribution of Number of Bedrooms", x = "Number of Bedrooms in a parcel", y = "Count")
+
+ggplotly(V6_plot)
+
+```
+
+The above histogram shows the distribution of number of bedrooms. As per the above graph, we can observe that most parcels have bedroom count of 2 followed by bedroom count of 3. 
+
+
+
