@@ -1,0 +1,354 @@
+---
+title: "Module 3"
+author: "Sanchi Gupta"
+date: "2023-11-30"
+output:
+  html_document
+---
+
+# Module 3 R Practice
+### 1. Reading the dataset into R
+```{r}
+property <- read.csv("fy2023-property-assessment-data.csv")
+```
+
+### 2. Cleaning the dataset
+* #### Importing Libraries
+```{r}
+library(janitor)
+library(tidyverse)
+```
+
+* #### Cleaning the col names 
+```{r}
+property <- clean_names(property)
+```
+
+* #### Replacing outliers
+```{r}
+#creating a function to filter outliers
+filter_outliers <- function(x) {
+  quantile1 <- quantile(x, 0.25, na.rm = TRUE)
+  quantile3 <- quantile(x, 0.75, na.rm = TRUE)
+  iqr_value <- IQR(x, na.rm = TRUE)
+  
+  lower_values <- quantile1 - 1.5 * iqr_value
+  upper_values <- quantile3 + 1.5 * iqr_value
+  
+  outliers_removed <- ifelse(x < lower_values | x > upper_values, NA, x)
+  x_cleaned <- ifelse(is.na(outliers_removed), median(x, na.rm = TRUE), outliers_removed) 
+  
+                    return(x_cleaned)
+}
+
+# Clean all numeric columns in the dataset
+property_df_cleaned <- property %>%
+  mutate(across(where(is.numeric), filter_outliers))
+
+# Remove rows with any NA values after cleaning
+property_df_cleaned <-na.omit(property_df_cleaned)
+
+```
+
+
+* #### Extracting useful cols
+```{r}
+property_extract<- subset(property_df_cleaned, select= 
+                        c(city, num_bldgs ,res_units, bldg_value, land_sf,land_value, total_value, gross_tax, yr_built, yr_remodel, bed_rms, full_bth))
+```
+
+* #### Viewing data type
+```{r}
+str(property_extract)
+```
+
+### PART 1 - One Sample T-Test using critical value
+### Variable 1
+* One sample t-test on variable **bldg_value.** This variable gives us the total assessed building value. 
+First we will calculate the true value for the population.
+```{r}
+# True value of 'bldg_value' = μ ( mean of variable)
+true_value_bldg<- mean(property_extract$bldg_value)
+
+print(true_value_bldg)
+```
+The hypothesis for the above will be as follow:
+
+**Null Hypothesis** = The population mean building value is equal to $ 472,968.9
+
+**Alternative Hypothesis** = The population mean building value is not equal to $ 472,968.9
+
+
+* #### Creating 2 samples from the main data to perform the t test
+We have created two different sample with different sample size to check the variation.
+```{r}
+
+# Created SAMPLE 1 of 500 values randomly
+sample1 <- sample_n(property_extract,500)
+
+# Created SAMPLE 2 of 100 values randomly
+sample2 <- sample_n(property_extract,100)
+```
+
+* #### Performing one sample t test on Sample 1
+``` {r}
+# One Sample t-test for SAMPLE 1
+result_1 <- t.test(sample1$bldg_value, mu = true_value_bldg)
+```
+
+The results of the one-sample t-test on the variable "bldg_value" are as follows:
+```{r}
+print (result_1)
+```
+```{r}
+# Degrees of freedom
+df_1 <- 499
+
+# Probability level 
+confidence_interval <- 0.95
+
+# Calculate t critical value
+t_critical_1 <- qt((1 + confidence_interval)/2, df_1)
+ 
+print (t_critical_1)
+```
+
+**Interpretation:**
+
+* t-value:
+The t-value of 1.1249 indicates that the sample mean is 1.1249 standard errors above the specified true value of $472,968.9.
+
+* Confidence Interval:
+The 95% confidence interval around the sample mean ($488,373.6) is from $461,467.1 to $515,280.1. This interval provides a range within which we can be 95% confident that the true population mean lies.
+
+* t-critical:
+The absolute value of the t-statistic (1.1249) is less than the t critical value (1.964729), indicating that we fail to reject the null hypothesis.
+
+* Conclusion:
+Based on this test, we fail to reject the null hypothesis. There is no strong evidence to suggest that the population mean building value is different from the specified true value of $472,968.9.
+
+
+* #### Performing one sample t test on Sample 2
+```{r}
+result_2 <- t.test(sample2$bldg_value, mu = true_value_bldg)
+```
+
+The results of the one-sample t-test on the variable "bldg_value" are as follows:
+```{r}
+print (result_2)
+```
+```{r}
+# Degrees of freedom
+df_2 <- 99
+
+# Probability level 
+# confidence_interval <- 0.95 (stated earlier)
+
+# Calculate t critical value
+t_critical_2 <- qt((1 + confidence_interval)/2, df_2)
+ 
+print(t_critical_2)
+```
+
+**Interpretation:**
+
+* t-value:
+The t-value of -0.81419 indicates that the sample mean is -0.81419 standard errors below the specified true value of $472,968.9. The data does not provide strong support for the true mean being different from $472,968.9.
+
+* Confidence Interval:
+The 95% confidence interval ($378,143.4 to $512,616.1) includes the specified true value, which further supports the conclusion that there is no significant difference.
+
+* t Critical:
+The absolute value of the t-statistic (0.81419) is less than the t critical value (1.984217), indicating that we fail to reject the null hypothesis.
+
+* Conclusion:
+Based on the results, there is no significant evidence to suggest that the population mean of building value is different from the specified true value of $472,968.9.
+
+#### Final Conclusion for one sample t-test for Building Value:
+Based on the statistical analysis of the two samples, there is no significant evidence to suggest that the population mean of the building value is different from the specified true value of $472,968.9. Therefore, we do not have enough evidence to reject the null hypothesis for either of the two samples.
+
+----
+
+### Variable 2
+* One sample t-test on variable **land_sf.** This variable gives us the parcel’s land area in square feet. 
+First we will calculate the true value for the population.
+```{r}
+# True value of 'land_sf' = μ ( mean of variable)
+true_value_land<- mean(property_extract$land_sf)
+
+print(true_value_land)
+```
+The hypothesis for the above will be as follow:
+
+**Null Hypothesis** = The population mean land area is equal to 2689.257
+
+**Alternative Hypothesis** = The population mean land area is not equal to 2689.257
+
+
+* a. #### Creating 2 samples from the main data to perform the t test
+We have created two different sample with different sample size to check the variation.
+```{r}
+
+# Created SAMPLE 1 of 500 values randomly
+sample3 <- sample_n(property_extract,500)
+
+# Created SAMPLE 2 of 100 values randomly
+sample4 <- sample_n(property_extract,100)
+
+```
+
+* b. #### Performing one sample t test on Sample 1 for land_sf
+``` {r}
+# One Sample t-test for SAMPLE 1
+result_3 <- t.test(sample3$land_sf, mu = true_value_land)
+```
+
+The results of the one-sample t-test on the variable "bldg_value" are as follows:
+```{r}
+print (result_3)
+```
+* c. Finding the critical value using same df and confidence interval
+```{r}
+# Degrees of freedom
+# df_1 <- 499 (value stored earlier)
+
+# Probability level 
+# confidence_interval <- 0.95 (value stored earlier)
+
+# Calculate t critical value
+t_critical_3 <- qt((1 + confidence_interval)/2, df_1)
+ 
+print (t_critical_3)
+```
+
+**Interpretation:**
+
+* t-value:
+The t-value of -0.82923 indicates that the sample mean is -0.82923 standard errors below the specified true value of 2689.257. 
+
+* Confidence Interval:
+The 95% confidence interval (2418.973 to 2799.103) includes the specified true value, which further supports the conclusion that there is no significant difference.
+
+* t Critical Value:
+The absolute value of the t-statistic (0.82923) is less than the t critical value (1.964729), indicating that you fail to reject the null hypothesis.
+
+* Conclusion: 
+In summary, based on the provided results, there is no significant evidence to suggest that the sample mean land area is different from the specified true value of 2689.257.
+
+* #### Performing one sample t test on Sample 2
+* a. sample 2 for the same variable. We have taken different sample size
+```{r}
+result_4 <- t.test(sample4$land_sf, mu = true_value_land)
+```
+
+The results of the one-sample t-test on the variable "bldg_value" are as follows:
+```{r}
+print (result_4)
+```
+* b. Finding the t critical value
+```{r}
+# Degrees of freedom
+# df_2 <- 99 (value stored earlier)
+
+# Probability level 
+# confidence_interval <- 0.95 (value stored earlier)
+
+# Calculate t critical value
+t_critical_4 <- qt((1 + confidence_interval)/2, df_2)
+ 
+print (t_critical_4)
+```
+
+**Interpretation:**
+
+* t-value:
+The sample mean is -0.11655 standard errors below the given real value of 2689.257, according to the t-value of -0.11655. There is insufficient evidence in the data to suggest that the sample mean deviates from 2689.257.
+
+* Confidence Interval:
+The 95% confidence interval (2221.585 to 3105.035) includes the specified true value, which further supports the conclusion that there is no significant difference.
+
+* t Critical Value:
+The null hypothesis cannot be rejected since the t-statistic's absolute value (0.11655) is smaller than the t critical value (1.984217).
+
+* Conclusion: 
+In summary, based on the provided results, there is no significant evidence to suggest that the sample mean land area is different from the specified true value of 2689.257.
+
+#### Final Conclusion for one sample t-test for Land Value:
+Based on the statistical analyses, there is no substantial indication to reject the null hypothesis, implying that the population mean land area is not significantly different from the specified true value of 2689.257 for the given samples.
+
+----
+
+### PART 2 - One Sample T-Test using p-value for Gross Tax
+We'll take 2 samples of different sizes such as 100 and 500 that we have used above respectively 'sample1' and 'sample2'.
+
+* First we will calculate the true value for the population for gross tax.
+```{r}
+# True value of 'gross_tax' = μ ( mean of variable)
+true_value_tax <- mean(property_extract$gross_tax)
+
+print (true_value_tax)
+```
+The hypothesis for the above will be as follow:
+
+**Null Hypothesis** = The population mean gross tax is equal to $ 6187.053
+
+**Alternative Hypothesis** = The population mean gross tax is not equal to $ 6187.053
+
+
+ #### Using 2 samples extracted earlier from the main data to perform the t test
+* #### Performing one sample t test on Sample 1
+```{r}
+# One Sample t-test for SAMPLE 1
+result_5 <- t.test(sample1$gross_tax, mu = true_value_tax)
+```
+
+The results of the one-sample t-test on the variable "gross_tax" are as follows:
+```{r}
+print(result_5)
+```
+**Interpretation:**
+Criteria for rejecting null hypothesis using p-value
+
+* a. If p value <= 0.05 (Standard significance value), we reject Null Hypothesis
+
+* b. If p value > 0.05 (Standard significance value), we fail to reject Null Hypothesis
+
+
+* p-value:
+The p-value of 0.3876 is greater than the common significance level of 0.05. Therefore, there is no significant evidence to reject the null hypothesis. The data does not provide strong support for the sample mean being different from 6187.053.
+
+* Confidence Interval:
+The 95% confidence interval (5709.56 to 6372.70) includes the specified true value, which further supports the conclusion that there is no significant difference.
+
+* Comparison with Population Mean:
+The sample mean of 6041.13 is slightly below the specified population mean of 6187.053, but the difference is not statistically significant based on the test results.
+
+* #### Performing one sample t test on Sample 2
+```{r}
+result_6 <- t.test(sample2$gross_tax, mu = true_value_tax)
+```
+
+The results of the one-sample t-test on the variable "bldg_value" are as follows:
+```{r}
+print (result_6)
+```
+**Interpretation:**
+Criteria for rejecting null hypothesis using p-value
+
+* a. If p value <= 0.05 (Standard significance value), we reject Null Hypothesis
+
+* b. If p value > 0.05 (Standard significance value), we fail to reject Null Hypothesis
+
+
+* p-value:
+The p-value of 0.9228 is much greater than the common significance level of 0.05. Therefore, there is no significant evidence to reject the null hypothesis. 
+
+* Confidence Interval:
+The 95% confidence interval (5424.657 to 7028.004) includes the specified true value, which further supports the conclusion that there is no significant difference.
+
+* Comparison with Population Mean:
+The sample mean of 6226.33 is above the specified population mean of 6187.053, but the difference is not statistically significant based on the test results.
+
+#### Combined Conclusion for Gross Tax using p value (Sample 1 and Sample 2):
+Based on the statistical analyses of both samples, there is no significant evidence to suggest that the population mean of gross tax is different from the specified true value of 6187.053. In both cases, the p-values are considerably greater than the common significance level of 0.05, and the confidence intervals include the specified true value. Therefore, there is not enough evidence to reject the null hypothesis, and the sample means appear consistent with the specified population mean for gross tax.
+
