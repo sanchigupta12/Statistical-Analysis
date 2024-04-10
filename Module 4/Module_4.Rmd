@@ -1,0 +1,167 @@
+---
+title: "Module 4"
+author: "Sanchi Gupta"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+### PART 1
+
+For this part, we have to perform two sample t-test for 'cats' data set.
+```{r}
+library(MASS) 
+```
+
+#### 1. Importing the cats dataset
+```{r}
+df<- cats
+```
+
+
+#### 2. Creating two subset for male and female respectively
+```{r}
+male <- subset(cats, subset=(cats$Sex=="M"))
+female <- subset(cats, subset=(cats$Sex=="F"))
+```
+
+
+#### 3. Checking assumptions before performing two sample t-test
+When performing a two sample t-test, there are three key assumptions that need to be considered:
+
+* **a. The data should be normally distributed:**
+To check the normallity, we will perform shapiro test.
+```{r}
+shapiro_test_male <- shapiro.test(male$Bwt)
+print(shapiro_test_male)
+
+shapiro_test_female <- shapiro.test(female$Bwt)
+print(shapiro_test_female)
+```
+In this case,
+Male Cats: The p-value is 0.119, which is greater than the common significance level of 0.05. Therefore, the data for male cat bodyweights appears consistent with a normal distribution.
+
+Female Cats: The p-value is 0.0003754, which is less than 0.05. Therefore, the data for female cat bodyweights does not appear to be consistent with a normal distribution.
+
+* **b. The variables should be independent:** 
+In this dataset, the variables are independent of each other as we have two different groups.
+
+* **c. The data should be measured in ratio scale:**
+The data is measured in ratio scale or intervals.
+
+We observe that the data is not normally distributed and there is unequal variance, so we will consider non parametric test. We will use **Welch's t-test.**
+
+----
+
+#### 4. Stating the Hypthesis
+**Null Hypothesis** = The male and female cats have the same body weight.
+
+**Alternative Hypothesis** = The male and female cats do not have the same body weight.
+
+----
+
+#### 5. Performing two sample t-test with unequal variance
+```{r}
+# two-sample t-test with unequal variance
+result_1 <- t.test(male$Bwt, female$Bwt , var.equal = FALSE)
+
+# Print the result
+print(result_1)
+```
+
+**Interpretation:**
+
+* t-value:
+The t-value of 8.7095 is associated with an extremely low p-value (8.831e-15), which is well below the conventional significance level of 0.05.
+
+* Confidence Interval:
+The 95% confidence interval for the difference in means (0.4177 to 0.6631) does not include zero, further supporting the conclusion of a significant difference.
+
+* Sample Estimates:
+The sample estimates of the mean body weights indicate that, on average, male cats have a higher body weight (2.9) compared to female cats (2.3596).
+
+* Conclusion:
+In summary, based on the results of the Welch Two Sample t-test, there is strong evidence to suggest that there is a statistically significant difference in mean body weights between male and female cats. Therefore, **we reject the null hypothesis, suggesting that there is a significant difference in mean body weights between male and female cats.**
+
+----
+
+### PART 2
+### Using significance value 0.05
+#### 1. Storing the given values in two separate data frames
+```{r}
+before_workshop <- c(4.6, 7.8, 9.1, 5.6, 6.9, 8.5, 5.3, 7.1, 3.2, 4.4)
+after_workshop <- c(6.6, 7.7, 9.0, 6.2, 7.8, 8.3, 5.9, 6.5, 5.8, 4.9)
+```
+
+
+#### 2. Stating the Hypthesis
+**Null Hypothesis** = The average sleeping quality before and after the meditation workshop is the same.
+
+**Alternative Hypothesis** = The average sleeping quality after the meditation workshop is higher than before.
+
+**Significance Level** = alpha, α = 0.05
+
+----
+
+#### 3. Performing two sample t-test for paired samples with 0.05 significance level
+
+```{r}
+
+result_2 <- t.test(after_workshop, before_workshop, alternative = "greater", paired = TRUE)
+print(result_2)
+```
+**Interpretation:**
+
+* Criteria for rejecting null hypothesis using p-value
+   1. If p-value <= 0.05 (Standard significance value), we reject Null Hypothesis
+   2. If p-value > 0.05 (Standard significance value), we fail to reject Null Hypothesis
+
+* p-value:
+Given a p-value of 0.04161 (less than 0.05), we reject the null hypothesis. There is enough evidence to suggest that the average sleeping quality after the workshop is significantly greater than before.
+
+* Confidence Interval:
+The 95% confidence interval for the mean difference is entirely above 0, supporting the conclusion.
+
+* Conclusion:
+The paired t-test provides evidence to support the researchers' claim that meditation improves sleeping quality.
+
+----
+
+### Using significance value 0.1
+
+#### 1. Stating the Hypthesis
+**Null Hypothesis** = The average sleeping quality before and after the meditation workshop is the same.
+
+**Alternative Hypothesis** = The average sleeping quality after the meditation workshop is higher than before.
+
+**Significance Level** = alpha, α = 0.1
+
+
+
+#### 2. Performing two sample t-test for paired samples with 0.1 significance level
+
+```{r}
+
+result_3 <- t.test(after_workshop, before_workshop, alternative = "greater", paired = TRUE, alpha = 0.1)
+
+print(result_3)
+
+```
+**Interpretation:**
+
+* Criteria for rejecting null hypothesis using p-value
+   1. If p-value <= 0.1 (Standard significance value), we reject Null Hypothesis
+   2. If p-value > 0.1 (Standard significance value), we fail to reject Null Hypothesis
+
+* p-value:
+Given a p-value of 0.04161 (less than 0.1), we reject the null hypothesis. There is enough evidence to suggest that the average sleeping quality after the workshop is significantly greater than before.
+
+* Confidence Interval:
+The 95% confidence interval for the mean difference is entirely above 0, supporting the conclusion.
+
+* Conclusion:
+The paired t-test provides evidence to support the researchers' claim that meditation improves sleeping quality.
+
+
+### Combined Interpretation of Paired t-Test Results:
+The results consistently provide evidence that meditation significantly improved sleeping quality, regardless of whether a significance level of 0.05 or 0.1 is used. The p-value, confidence interval, and mean difference all support the conclusion that there is a positive effect of the meditation workshop on sleeping quality.
